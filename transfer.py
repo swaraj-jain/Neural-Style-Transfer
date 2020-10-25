@@ -1,3 +1,4 @@
+#import the dependencies
 import os
 import sys
 import scipy.io
@@ -19,13 +20,13 @@ content_image = scipy.misc.imread("images/me.jpg")
 imshow(content_image);
 
 
+#compares pixel to pixel loss
+def compute_content_cost(a_Co, a_Gen):          
 
-def compute_content_cost(a_C, a_G):
+    m, n_H, n_W, n_C = a_Gen.get_shape().as_list()
 
-    m, n_H, n_W, n_C = a_G.get_shape().as_list()
-
-    a_C_unrolled = tf.reshape(a_C,[-1])
-    a_G_unrolled = tf.reshape(a_G,[-1])
+    a_C_unrolled = tf.reshape(a_Co,[-1])
+    a_G_unrolled = tf.reshape(a_Gen,[-1])
 
     J_content = tf.reduce_sum(tf.square(a_C_unrolled-a_G_unrolled))/(4*n_H*n_W*n_C)
     
@@ -34,22 +35,22 @@ def compute_content_cost(a_C, a_G):
 style_image = scipy.misc.imread("images/face style.jpg")
 imshow(style_image);
 
-def gram_matrix(A):
+def gram_matrix(mat):
 
-    GA = tf.matmul(A,tf.transpose(A))
+    GM = tf.matmul(mat,tf.transpose(mat))
 
-    return GA
+    return GM
 
+#compares the loss in style by calculating the difference in covariance in pixels 
+def compute_layer_style_cost(a_Sty, a_Gen):
 
-def compute_layer_style_cost(a_S, a_G):
+    m, n_H, n_W, n_C = a_Gen.get_shape().as_list()
 
-    m, n_H, n_W, n_C = a_G.get_shape().as_list()
+    a_Sty = tf.reshape(a_Sty, [n_H*n_W, n_C])
+    a_Gen = tf.reshape(a_Gen, [n_H*n_W, n_C])
 
-    a_S = tf.reshape(a_S, [n_H*n_W, n_C])
-    a_G = tf.reshape(a_G, [n_H*n_W, n_C])
-
-    GS = gram_matrix(tf.transpose(a_S))
-    GG = gram_matrix(tf.transpose(a_G))
+    GS = gram_matrix(tf.transpose(a_Sty))
+    GG = gram_matrix(tf.transpose(a_Gen))
 
     J_style_layer = tf.reduce_sum(tf.square(GS-GG)) / (4 * n_C**2 * (n_W * n_H)**2)
 
@@ -64,7 +65,7 @@ STYLE_LAYERS = [
 ('conv5_1', 0.2)]
 
 
-
+#computes total style cost over different layers
 def compute_style_cost(model, STYLE_LAYERS):
 
     J_style = 0
@@ -86,12 +87,12 @@ def compute_style_cost(model, STYLE_LAYERS):
     return J_style
 
 
-
+#sums up all the cost 
 def total_cost(J_content, J_style, alpha = 10, beta = 40):
     
-    J = alpha*J_content + beta*J_style
+    TC = alpha*J_content + beta*J_style
     
-    return J
+    return TC
 
 # Reset the graph
 tf.reset_default_graph()
